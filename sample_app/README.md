@@ -20,3 +20,30 @@ Generate StaticPages:
 Custom StaticPages:
 * edit app/views/static_pages/home.html.erb
 * edit app/views/static_pages/help.html.erb
+
+Getting Started with Testing:
+* $ ls test/controllers
+* look at static_pages_controller_test.rb
+* a. comment out 'guard-minitest'
+* b. install guard
+* b. $ bundle exec rake db:migrate #if the app is using the database
+* $ bundle exec rake test
+* add test "should get about" in class StaticPagesControllerTest
+
+StaticPagesControllerTest#test_should_get_about:
+
+error 1:
+ActionController::UrlGenerationError: No route matches {:action=>"about", :controller=>"static_pages"}
+solution 1:
+config/routes.rb add get 'static_pages/about'
+
+error 2:
+AbstractController::ActionNotFound: The action 'about' could not be found for StaticPagesController
+solution 2:
+app/controllers/static_pages_controllers.rb add def about;end
+
+error 3:
+ActionView::MissingTemplate: Missing template static_pages/about, application/about with {:locale=>[:en], :formats=>[:html], :variants=>[], :handlers=>[:erb, :builder, :raw, :ruby, :coffee, :jbuilder]}
+solution 3:
+$ touch app/views/static_pages/about.html.erb
+edit the content of the file
