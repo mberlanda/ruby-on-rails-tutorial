@@ -1,28 +1,223 @@
-== README
+== Toy App
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+The purpose of this tutorial is to create a basic micro-blogging app.
 
-Things you may want to cover:
+init the repository and create the new application
 
-* Ruby version
+create new app with scaffolding
 
-* System dependencies
+  $ cd ~/workspace
+  $ rails new toy_app
+  $ cd toy_app
 
-* Configuration
+edit the GemFile including
 
-* Database creation
+  group :production do
+    gem 'pg'
+    gem 'rails_12factor'
+  end
 
-* Database initialization
+in order to use the gem pg, I need to install first libpq-dev (Postgre-SQL)
 
-* How to run the test suite
+  $ sudo apt-get install  libpq-dev
+  $ bundle install # --without production
 
-* Services (job queues, cache servers, search engines, etc.)
+data model for the application
 
-* Deployment instructions
+users
+id: integer
+name: string
+email:string
 
-* ...
+microposts
+id: integer
+content: text
+user_id: integer
 
 
-Please feel free to use a different markup language if you do not plan to run
-<tt>rake doc:app</tt>.
+<b>The Users Resource</b>
+implementation of the users data model using scaffolding
+
+  $ rails generate scaffold User name:string email:string
+
+migrate the database using rake
+
+  $ bundle exec rake db:migrate
+
+$ bundle exec rake db:
+* migrate
+* drop
+* create
+* more available on $ bundle exec rake -T db ...
+
+The most common rails commands are:
+* generate (g )
+* console (c )
+* server (s )
+* dbconsole (db )
+* new
+* destroy (d )
+
+change the landing page
+
+config/routes.rb
+
+The Rails routes with a rule for the User resource
+
+  Rails.application.routes.draw do
+    resources :users
+    .
+    root 'users#index'
+    .
+  end
+
+The Users controller
+app/controllers/users_controller.rb
+
+  class UserController < ApplicationController
+    .
+    def index; end
+    def show; end
+    def new; end
+    def edit; end
+    def create; end
+    def update; end
+    def destroy; end
+  end
+
+  $ rake routes
+
+<b>$ rake routes</b>
+
+index: Page to list all users (GET)
+/users
+
+show: Page to show user with id 1 (GET)
+/users/1
+
+new: Page to make a new user (GET)
+/users/new
+
+create: Create a new user (POST)
+/users
+
+edit: Page to edit user with id 1 (GET)
+/users/1/edit
+
+update: Update user with id 1 (PATCH)
+/users/1
+
+destroy: Delete user with id 1 (DELETE)
+/users/1
+
+
+Weakness of this Users Resource:
+* no data validation
+* no authentication
+* no tests
+* no style or layout
+* no real understanding
+
+<b>The Microposts Resource </b
+
+    $ rails generate scaffold Micropost content:text used_id:integer 
+      invoke  active_record 
+      create    db/migrate/20151207113835_create_microposts.rb 
+      create    app/models/mircopost.rb 
+      invoke    test_unit 
+      create      test/models/mircopost_test.rb 
+      create      test/fixtures/microposts.yml 
+      invoke  resource_route 
+       route    resources :microposts 
+      invoke  scaffold_controller 
+      create    app/controllers/microposts_controller.rb 
+      invoke    erb 
+      create      app/views/microposts 
+      create      app/views/microposts/index.html.erb 
+      create      app/views/microposts/edit.html.erb 
+      create      app/views/microposts/show.html.erb 
+      create      app/views/microposts/new.html.erb 
+      create      app/views/microposts/_form.html.erb 
+      invoke    test_unit 
+      create      test/controllers/microposts_controller_test.rb 
+      invoke    helper 
+      create      app/helpers/microposts_helper.rb 
+      invoke      test_unit 
+      invoke    jbuilder 
+      create      app/views/microposts/index.json.jbuilder 
+      create      app/views/microposts/show.json.jbuilder 
+      invoke  assets 
+      invoke    coffee 
+      create      app/assets/javascripts/microposts.coffee 
+      invoke    scss 
+      create      app/assets/stylesheets/microposts.scss 
+      invoke  scss 
+   identical    app/assets/stylesheets/scaffolds.scss
+ 
+  $ bundle exec rake db:migrate
+
+automatic files and lines generated
+config/routes.rb
+
+    Rails.application.routes.draw do
+      resources :microposts
+      resources :users
+      .
+      .
+    end
+
+  $ rake routes gives to Microposts the same REST architecture provided by Users
+
+app/controllers/microposts_controller.rb
+
+even in this case the file structure is identical to the Users model
+
+<b>constraining microposts</b>
+
+app/models/microposts.rb
+
+    class Micropost < ActiveRecord::Base
+      validates :content, length: { maximum: 140 }
+    end
+
+<i>has_many</i> 
+
+app/models/user.rb
+
+    class User < ActiveRecord::Base
+      has_many :microposts
+    end
+
+app/models/micropost.rb
+
+    class Micropost < ActiveRecord::Base
+      belongs_to :user
+      validates :content, length: { maximum: 140 }
+    end
+
+<i>how to check it</i>
+
+    $ rails c
+    Loading development environment (Rails 4.2.5)
+    2.2.1 :001 > first_user = User.first
+      User Load (0.2ms)  SELECT  "users".* FROM "users"  ORDER BY "users"."id" ASC LIMIT 1
+     => #<User id: 1, name: "test_user_1", email: "user_1@test.com", created_at: "2015-12-07 10:38:25", updated_at: "2015-12-07 13:50:28"> 
+    2.2.1 :002 > first_user.microposts
+      Micropost Load (0.2ms)  SELECT "microposts".* FROM "microposts" WHERE "microposts"."user_id" = ?  [["user_id", 1]]
+     => #<ActiveRecord::Associations::CollectionProxy [#<Micropost id: 1, content: "test 0", user_id: 1, created_at: "2015-12-07 13:42:16", updated_at: "2015-12-07 13:43:09">, #<Micropost id: 2, content: "test 1", user_id: 1, created_at: "2015-12-07 13:42:46", updated_at: "2015-12-07 13:42:46">]> 
+    2.2.1 :003 > micropost = first_user.microposts.first
+     => #<Micropost id: 1, content: "test 0", user_id: 1, created_at: "2015-12-07 13:42:16", updated_at: "2015-12-07 13:43:09"> 
+    2.2.1 :004 > micropost.user
+     => #<User id: 1, name: "test_user_1", email: "user_1@test.com", created_at: "2015-12-07 10:38:25", updated_at: "2015-12-07 13:50:28"> 
+    2.2.1 :005 > exit
+
+code to validate the presence of micropost content
+
+app/models/micropost.rb
+
+    class Micropost < ActiveRecord::Base
+      belongs_to :user
+      validates :content, length: { maximum: 140 }
+                                    presence: true
+    end
+
