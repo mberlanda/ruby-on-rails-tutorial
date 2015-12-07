@@ -11,7 +11,12 @@ Initial commit:
 *  $ bundle update
 *  $ git mv README.rdoc README.md
 
- Generate StaticPages:
- * $ git checkout master
- * $ git checkout -b static-pages
- * $ rails generate controller StaticPages home help
+Generate StaticPages:
+* $ git checkout master
+* $ git checkout -b static-pages
+* $ rails generate controller StaticPages home help
+* $ git push --set-upstream origin static-pages
+
+Custom StaticPages:
+* edit app/views/static_pages/home.html.erb
+* edit app/views/static_pages/help.html.erb
