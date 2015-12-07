@@ -56,3 +56,6 @@ Slightly Dynamic Pages:
 * $ mv layout_file app/views/layouts/application.html.erb
 * add to layout_file: <title><%= yield(:title) %> | Ruby on Rails Tutorial Sample App</title>
 * root the home page in config/routes.rb
+
+Finish Static Page:
+* merge static-pages and master branch
