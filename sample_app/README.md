@@ -256,3 +256,32 @@ footer ul li {
   margin-left: 15px;
 }
 ```
+
+Sass and the Asset Pipeline:
+```scss
+/* footer nested and with variables */
+
+footer {
+  margin-top: 45px;
+  padding-top: 5px;
+  border-top: 1px solid $gray-medium-light;
+  color: $gray-light;
+  a {
+   color: $gray;
+   &:hover {
+     color: $gray-darker;
+    }
+  }
+  small {
+   float: left;
+  }
+  ul {
+    float: right;
+    list-style: none;
+    li {
+      float: left;
+      margin-left: 15px;
+    }
+  }
+}
+```
