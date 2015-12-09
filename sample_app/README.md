@@ -209,3 +209,50 @@ $ touch app/assets/stylesheets/custom.css.scss
 @import "bootstrap";
 ```
 
+Partials:
+
+*app/views/layouts/_footer.html.haml*
+
+```haml
+%footer.footer
+  %small
+    The
+    %a{:href => "http://www.railstutorial.org/"} Ruby on Rails Tutorial
+    by
+    %a{:href => "http://www.michealhartl.com/"} Micheal Hartl
+  %nav
+    %ul
+      %li= link_to "About", "#"
+      %li= link_to "Contact", "#"
+      %li= link_to "News", "http://news.railstutorial.org/"
+```
+
+*app/stylesheets/custom.css.scss*
+
+```scss
+/* footer */
+
+footer {
+  margin-top: 45px;
+  padding-top: 5px;
+  border-top: 1px solid #eaeaea;
+  color: #777;
+}
+footer a {
+  color: #555;
+}
+footer a:hover {
+  color: #222;
+}
+footer small {
+  float: left;
+}
+footer ul {
+  float: right;
+  list-style: none;
+}
+footer ul li {
+  float: left;
+  margin-left: 15px;
+}
+```
