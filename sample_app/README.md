@@ -96,3 +96,21 @@ end
 ```ruby
 <title><%= full_title(yield(:title)) %></title>
 ```
+
+Example User Class:
+
+*example_user.rb*
+```ruby
+2.2.1 :001 > require './example_user'
+ => true 
+2.2.1 :002 > example = User.new
+ => #<User:0x0000000142ae90 @name=nil, @email=nil> 
+2.2.1 :003 > example.name
+ => nil 
+2.2.1 :004 > example.name = "Example User"
+ => "Example User" 
+2.2.1 :005 > example.email = "user@example.com"
+ => "user@example.com" 
+2.2.1 :006 > example.formatted_email
+ => "Example User <user@example.com>" 
+```
