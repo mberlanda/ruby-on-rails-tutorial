@@ -5,25 +5,32 @@ This is the sample application for the
 Learn Web Development with Rails*] (http://www.railstutorial.org/)
 by [Micheal Hartl] (http://www.michealhartl.com/).
 
-Initial commit:
-*  $ rails new sample_app
-*  # edit GemFile
-*  $ bundle update
-*  $ mv README.rdoc README.md
+**Chapter 3: Mostly Static Pages**
 
+branch: *static-pages*, *static-pages-exercises*
+
+Initial commit:
+```bash
+$ rails new sample_app
+# edit GemFile
+$ bundle update
+$ mv README.rdoc README.md
+```
 Generate StaticPages:
-* $ git checkout master
-* $ git checkout -b static-pages
-* $ rails generate controller StaticPages home help
-* $ git push --set-upstream origin static-pages
+```bash
+$ git checkout master
+$ git checkout -b static-pages
+$ rails generate controller StaticPages home help
+$ git push --set-upstream origin static-pages
+```
 
 Custom StaticPages:
-* edit app/views/static_pages/home.html.erb
-* edit app/views/static_pages/help.html.erb
+* edit *app/views/static_pages/home.html.erb*
+* edit *app/views/static_pages/help.html.erb*
 
 Getting Started with Testing:
 * $ ls test/controllers
-* look at static_pages_controller_test.rb
+* look at *static_pages_controller_test.rb*
 * a. comment out 'guard-minitest'
 * b. install guard
 * b. $ bundle exec rake db:migrate #if the app is using the database
@@ -35,7 +42,7 @@ StaticPagesControllerTest#test_should_get_about:
 * error 1:
   ActionController::UrlGenerationError: No route matches {:action=>"about", :controller=>"static_pages"}
 * solution 1:
-  config/routes.rb add get 'static_pages/about'
+  *config/routes.rb* add get 'static_pages/about'
 
 * error 2:
   AbstractController::ActionNotFound: The action 'about' could not be found for StaticPagesController
@@ -61,6 +68,31 @@ Finish Static Page:
 * merge static-pages and master branch
 
 Minitest Reporters:
-* test/test_helper.rb
-* require "minitest/reporters"
-* Minitest::Reporters.use!
+*test/test_helper.rb*
+```ruby
+require "minitest/reporters"
+Minitest::Reporters.use!
+```
+
+**Chapter 4: Rails-Flavored Ruby**
+
+branch: *rails-flavored-ruby*
+
+Title Application Helper:
+
+*app/helpers/application_helper.rb*
+```ruby
+def full_title(page_title = '')
+  base_title = "Ruby on Rails Tutorial Sample App"
+  if page_title.empty?
+    base_title
+  else
+    "#{page_title} | #{base_title}"
+  end
+end
+```
+
+*app/views/layouts/application.html.erb*
+```ruby
+<title><%= full_title(yield(:title)) %></title>
+```
