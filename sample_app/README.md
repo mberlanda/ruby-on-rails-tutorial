@@ -260,7 +260,6 @@ footer ul li {
 Sass and the Asset Pipeline:
 ```scss
 /* footer nested and with variables */
-
 footer {
   margin-top: 45px;
   padding-top: 5px;
@@ -284,4 +283,47 @@ footer {
     }
   }
 }
+```
+
+Layout Links:
+
+*config/routes.rb*
+```ruby
+Rails.application.routes.draw do
+  root 'static_pages#home'
+  get 'help' => 'static_pages#help'
+  get 'about' => 'static_pages#about'
+  get 'contact' => 'static_pages#contact'
+```
+
+*app/views/layouts/_footer.html.haml*
+```haml
+%nav
+  %ul
+    %li= link_to "About", "#{about_path}"
+    %li= link_to "Contact", "#{contact_path}"
+    %li= link_to "News", "http://news.railstutorial.org/"
+```
+
+*test/integration/site_layout_test.rb*
+```bash
+$ rails g integration_test site_layout
+  invoke  test_unit
+  create    test/integration/site_layout_test.rb
+```
+* get the root path
+* verify that the right page template is rendered
+* check for the correct links to the Home, Help, About and Contact pages
+```ruby
+require 'test_helper'
+
+class SiteLayoutTest < ActionDispatch::IntegrationTest
+
+  test "layout links" do 
+    get root_path
+    assert_template  'static_pages/home'
+    assert_select "a[href=?]", root_path, count: 2 
+
+  end
+end
 ```
