@@ -59,3 +59,8 @@ Slightly Dynamic Pages:
 
 Finish Static Page:
 * merge static-pages and master branch
+
+Minitest Reporters:
+* test/test_helper.rb
+* require "minitest/reporters"
+* Minitest::Reporters.use!
