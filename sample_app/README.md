@@ -114,3 +114,7 @@ Example User Class:
 2.2.1 :006 > example.formatted_email
  => "Example User <user@example.com>" 
 ```
+
+```bash
+$ rm example_user.rb
+```
