@@ -185,8 +185,27 @@ Adding Some Structure:
   = link_to image_tag("rails.png", alt: "Rails logo"), 'http://rubyonrails.org/'
   ```
 
-* add the image to /app/assets/images
+* add the image to _/app/assets/images_
 ```bash
 $ cd app/assets/images/
 $ curl -O http://rubyonrails.org/images/rails.png
 ```
+
+Bootstrap and Custom CSS:
+
+*Gemfile*
+```ruby
+gem 'bootstrap-sass'
+```
+
+```bash
+$ bundle
+$ touch app/assets/stylesheets/custom.css.scss
+```
+
+*app/assets/stylesheets/custom.css.scss*
+```scss
+@import "bootstrap-sprockets";
+@import "bootstrap";
+```
+
