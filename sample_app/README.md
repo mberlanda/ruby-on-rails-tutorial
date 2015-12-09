@@ -5,7 +5,7 @@ This is the sample application for the
 Learn Web Development with Rails*] (http://www.railstutorial.org/)
 by [Micheal Hartl] (http://www.michealhartl.com/).
 
-**Chapter 3: Mostly Static Pages**
+## Chapter 3: Mostly Static Pages
 
 branch: *static-pages*, *static-pages-exercises*
 
@@ -74,7 +74,7 @@ require "minitest/reporters"
 Minitest::Reporters.use!
 ```
 
-**Chapter 4: Rails-Flavored Ruby**
+## Chapter 4: Rails-Flavored Ruby
 
 branch: *rails-flavored-ruby*
 
@@ -119,7 +119,7 @@ Example User Class:
 $ rm example_user.rb
 ```
 
-**Chapter 5: Filling in the Layout**
+## Chapter 5: Filling in the Layout
 
 branch: *filling-in-layout*
 
@@ -212,7 +212,6 @@ $ touch app/assets/stylesheets/custom.css.scss
 Partials:
 
 *app/views/layouts/_footer.html.haml*
-
 ```haml
 %footer.footer
   %small
@@ -326,4 +325,24 @@ class SiteLayoutTest < ActionDispatch::IntegrationTest
 
   end
 end
+```
+
+User Sign-up:
+
+*Generate new User controller*
+```bash
+$ rails g controller Users new
+$ rake test
+```
+* *app/controllers/users_controller.rb*
+* *app/views/users/new.html.haml*
+* *test/controllers/users_controller_test.rb*
+
+*config/routes.rb*
+```ruby
+  get 'signup' => 'users#new'
+```
+*app/views/static_pages/home.html.haml*
+```haml
+= link_to "Sign up now!", "#{signup_path}", class: "btn btn-lg btn-primary" 
 ```
