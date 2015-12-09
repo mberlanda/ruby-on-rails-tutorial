@@ -5,18 +5,22 @@ This is the sample application for the
 Learn Web Development with Rails*] (http://www.railstutorial.org/)
 by [Micheal Hartl] (http://www.michealhartl.com/).
 
-## Chapter 3: Mostly Static Pages
+**[Chapter 3: Mostly Static Pages](#cap3)**
+**[Chapter 4: Rails-Flavored Ruby](#cap4)**
+**[Chapter 5: Filling in the Layout](#cap5)**
+
+<h2 id="cap3">Chapter 3: Mostly Static Pages</h2>
 
 branch: *static-pages*, *static-pages-exercises*
 
-Initial commit:
+#### Initial commit:
 ```bash
 $ rails new sample_app
 # edit GemFile
 $ bundle update
 $ mv README.rdoc README.md
 ```
-Generate StaticPages:
+#### Generate StaticPages:
 ```bash
 $ git checkout master
 $ git checkout -b static-pages
@@ -24,11 +28,11 @@ $ rails generate controller StaticPages home help
 $ git push --set-upstream origin static-pages
 ```
 
-Custom StaticPages:
+#### Custom StaticPages:
 * edit *app/views/static_pages/home.html.erb*
 * edit *app/views/static_pages/help.html.erb*
 
-Getting Started with Testing:
+#### Getting Started with Testing:
 * $ ls test/controllers
 * look at *static_pages_controller_test.rb*
 * a. comment out 'guard-minitest'
@@ -37,7 +41,7 @@ Getting Started with Testing:
 * $ bundle exec rake test
 * add test "should get about" in class StaticPagesControllerTest
 
-StaticPagesControllerTest#test_should_get_about:
+####  StaticPagesControllerTest#test_should_get_about:
 
 * error 1:
   ActionController::UrlGenerationError: No route matches {:action=>"about", :controller=>"static_pages"}
@@ -55,7 +59,7 @@ StaticPagesControllerTest#test_should_get_about:
   $ touch app/views/static_pages/about.html.erb
   edit the content of the file
 
-Slightly Dynamic Pages:
+#### Slightly Dynamic Pages:
 * # Red-Green-Refactor cycle
 * $ mv app/views/layouts/application.html.erb layout_file
 * assert_select "title", "Home | Ruby on Rails Tutorial Sample App"
@@ -64,7 +68,7 @@ Slightly Dynamic Pages:
 * add to layout_file: <title><%= yield(:title) %> | Ruby on Rails Tutorial Sample App</title>
 * root the home page in config/routes.rb
 
-Finish Static Page:
+#### Finish Static Page:
 * merge static-pages and master branch
 
 Minitest Reporters:
@@ -74,11 +78,11 @@ require "minitest/reporters"
 Minitest::Reporters.use!
 ```
 
-## Chapter 4: Rails-Flavored Ruby
+<h2 id="cap4">Chapter 4: Rails-Flavored Ruby</h2>
 
 branch: *rails-flavored-ruby*
 
-Title Application Helper:
+#### Title Application Helper:
 
 *app/helpers/application_helper.rb*
 ```ruby
@@ -97,7 +101,7 @@ end
 <title><%= full_title(yield(:title)) %></title>
 ```
 
-Example User Class:
+####  Example User Class:
 
 *example_user.rb*
 ```ruby
@@ -119,11 +123,11 @@ Example User Class:
 $ rm example_user.rb
 ```
 
-## Chapter 5: Filling in the Layout
+<h2 id="cap5">Chapter 5: Filling in the Layout</h2>
 
 branch: *filling-in-layout*
 
-Adding Some Structure:
+#### Adding Some Structure:
 
 *app/views/layouts/application.html.erb*
 ```html
@@ -191,7 +195,7 @@ $ cd app/assets/images/
 $ curl -O http://rubyonrails.org/images/rails.png
 ```
 
-Bootstrap and Custom CSS:
+#### Bootstrap and Custom CSS:
 
 *Gemfile*
 ```ruby
@@ -209,7 +213,7 @@ $ touch app/assets/stylesheets/custom.css.scss
 @import "bootstrap";
 ```
 
-Partials:
+#### Partials:
 
 *app/views/layouts/_footer.html.haml*
 ```haml
@@ -256,7 +260,7 @@ footer ul li {
 }
 ```
 
-Sass and the Asset Pipeline:
+#### Sass and the Asset Pipeline:
 ```scss
 /* footer nested and with variables */
 footer {
@@ -284,7 +288,7 @@ footer {
 }
 ```
 
-Layout Links:
+#### Layout Links:
 
 *config/routes.rb*
 ```ruby
@@ -327,7 +331,7 @@ class SiteLayoutTest < ActionDispatch::IntegrationTest
 end
 ```
 
-User Sign-up:
+#### User Sign-up:
 
 *Generate new User controller*
 ```bash
@@ -345,4 +349,45 @@ $ rake test
 *app/views/static_pages/home.html.haml*
 ```haml
 = link_to "Sign up now!", "#{signup_path}", class: "btn btn-lg btn-primary" 
+```
+
+#### Including Application helper in tests:
+
+*test/test_helper.rb*
+```ruby
+class ActiveSupport::TestCase
+  # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
+  fixtures :all
+
+  # Add more helper methods to be used by all tests here...
+  include ApplicationHelper
+end
+```
+
+*test/integration/site_layout_test.rb*
+```ruby
+class SiteLayoutTest < ActionDispatch::IntegrationTest
+
+  test "layout links" do 
+  # ...
+  get signup_path
+    assert_select "title", full_title("Sign up")
+```
+
+*test/helpers/application_helper_test.rb*
+```ruby
+require 'test_helper'
+
+class ApplicationHelperTest < ActionView::TestCase
+  
+  def setup
+    @base_title = "Ruby on Rails Tutorial Sample App"
+  end
+
+  test "full title helper" do
+    assert_equal full_title, "#{@base_title}"
+    assert_equal full_title("Help"), "Help | #{@base_title}"
+  end
+
+end
 ```
