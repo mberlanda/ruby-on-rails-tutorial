@@ -118,3 +118,75 @@ Example User Class:
 ```bash
 $ rm example_user.rb
 ```
+
+**Chapter 5: Filling in the Layout**
+
+branch: *filling-in-layout*
+
+Adding Some Structure:
+
+*app/views/layouts/application.html.erb*
+```html
+<head>
+  <!-- [if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/r29/html5.min.js"></script>
+  <![endif]-->
+</head>
+```
+
+* create in body an header using CSS **class** and a **div** container
+```html
+<body>
+  <header class="navbar navbar-fixed-top navbar-inverse">
+    <div class="container">
+    <%= link_to "sample_app", "#", id: "logo" %>
+      <nav>
+        <ul class="nav navbar-nav navbar-right">
+        <li><%= link_to "Home", "#" %></li>
+        <li><%= link_to "Help", "#" %></li>
+        <li><%= link_to "Log in", "#" %></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <div class="container">
+    <%= yield %>
+  </div>
+</body>
+```
+
+* change _layouts/application_ from .html.erb to .html.haml
+```haml
+  %body
+    %header.navbar.navbar-fixed-top.navbar-inverse
+      .container
+        = link_to "sample_app", "#", id: "logo"
+        %nav
+          %ul.nav.navbar-nav.navbar-right#navbar
+            %li= link_to "Home", "#{root_path}"
+            %li= link_to "Help", "#"
+            %li= link_to "Log in", "#"  
+    .container
+      = yield
+```
+
+* add some features to _home.html.haml_
+```haml
+- provide(:title, "Home")
+.center.jumbotron
+  %h1 Sample App
+  %h2
+    This is the home page for the
+    %a{:href => "http://www.railstutorial.org/"} Ruby on Rails Tutorial
+    sample application.
+
+  .btn.btn-lg.btn-primary= link_to "Sign up now!", "#" 
+
+  = link_to image_tag("rails.png", alt: "Rails logo"), 'http://rubyonrails.org/'
+  ```
+
+* add the image to /app/assets/images
+```bash
+$ cd app/assets/images/
+$ curl -O http://rubyonrails.org/images/rails.png
+```
