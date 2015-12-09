@@ -5,11 +5,9 @@ This is the sample application for the
 Learn Web Development with Rails*] (http://www.railstutorial.org/)
 by [Micheal Hartl] (http://www.michealhartl.com/).
 
-<ul>
-<li>**[Chapter 3: Mostly Static Pages](#cap3)**</li>
-<li>**[Chapter 4: Rails-Flavored Ruby](#cap4)**</li>
-<li>**[Chapter 5: Filling in the Layout](#cap5)**</li>
-</ul>
+* **[Chapter 3: Mostly Static Pages](#cap3)**
+* **[Chapter 4: Rails-Flavored Ruby](#cap4)**
+* **[Chapter 5: Filling in the Layout](#cap5)**
 
 <h2 id="cap3">Chapter 3: Mostly Static Pages</h2>
 
