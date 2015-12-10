@@ -9,6 +9,9 @@ by [Micheal Hartl] (http://www.michealhartl.com/).
 * **[Chapter 4: Rails-Flavored Ruby](#cap4)**
 * **[Chapter 5: Filling in the Layout](#cap5)**
 * **[Chapter 6: Modeling Users](#cap6)**
+* **[Chapter 7: Sign Up](#cap7)**
+* **[Chapter 8: Log In, Log Out](#cap8)**
+
 
 <h2 id="cap3">Chapter 3: Mostly Static Pages</h2>
 
@@ -523,4 +526,59 @@ add_column :users, :password_digest, :string
   User Load (0.2ms)  SELECT  "users".* FROM "users" WHERE "users"."email" = ? LIMIT 1  [["email", "foo@bar.com"]]
 2.2.1 :003 > user.authenticate("foobar2015")
  => #<User id: 1, name: "foo bar", email: "foo@bar.com", created_at: "2015-12-10 11:44:13", updated_at: "2015-12-10 11:44:13", password_digest: "$2a$10$8Me1CLJuqs8U4SUtEz.3NOyJkuMyeXNqaT/VO/PC2ma..."> 
+```
+
+<h2 id="cap7">Chapter 7: Sign Up</h2>
+
+branch: *sign-up*
+
+
+<h2 id="cap8">Chapter 8: Log In, Log Out</h2>
+
+branch: *log-in-log-out*
+
+#### Sessions:
+```bash
+$ rails g controller Sessions new
+    create  app/controllers/sessions_controller.rb
+     route  get 'sessions/new'
+    invoke  haml
+    create    app/views/sessions
+    create    app/views/sessions/new.html.haml
+    invoke  test_unit
+    create    test/controllers/sessions_controller_test.rb
+    invoke  helper
+    create    app/helpers/sessions_helper.rb
+    invoke    test_unit
+    invoke  assets
+    invoke    coffee
+    create      app/assets/javascripts/sessions.coffee
+    invoke    scss
+    create      app/assets/stylesheets/sessions.scss
+```
+*config/routes.rb*
+```ruby
+get 'login' => 'sessions#new'
+post 'login' => 'sessions#create'
+delete 'logout' => 'sessions#destroy'
+```
+* edit *app/views/sessions/new.html.haml*
+* edit *app/controllers/sessions_controller.rb*
+```ruby
+  def create
+    user = User.find_by(email: params[:session][:email].downcase)
+    if user && user.authenticate(params[:session][:password])
+      # Log the user in and redirect to the user's show page
+    else
+      # Create an error message
+      flash.now[:danger] = 'Invalid email/password combination' # Not quite right
+      render 'new'
+    end
+  end
+```
+* create a test
+```bash
+$ rails generate integration_test users_login
+      invoke  test_unit
+      create    test/integration/users_login_test.rb
 ```
