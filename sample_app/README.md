@@ -8,6 +8,7 @@ by [Micheal Hartl] (http://www.michealhartl.com/).
 * **[Chapter 3: Mostly Static Pages](#cap3)**
 * **[Chapter 4: Rails-Flavored Ruby](#cap4)**
 * **[Chapter 5: Filling in the Layout](#cap5)**
+* **[Chapter 6: Modeling Users](#cap6)**
 
 <h2 id="cap3">Chapter 3: Mostly Static Pages</h2>
 
@@ -351,7 +352,7 @@ $ rake test
 = link_to "Sign up now!", "#{signup_path}", class: "btn btn-lg btn-primary" 
 ```
 
-#### Including Application helper in tests:
+#### Including Application Helper in tests:
 
 *test/test_helper.rb*
 ```ruby
@@ -391,3 +392,69 @@ class ApplicationHelperTest < ActionView::TestCase
 
 end
 ```
+
+<h2 id="cap6">Chapter 6: Modeling Users</h2>
+
+branch: *modeling-users*
+
+#### User Model
+
+```bash
+$ rails g model User name:string email:string
+      invoke  active_record
+      create    db/migrate/20151210095655_create_users.rb
+      create    app/models/user.rb
+      invoke    test_unit
+      create      test/models/user_test.rb
+      create      test/fixtures/users.yml
+$ bundle exec rake db:migrate
+$ rails console --sandbox
+```
+```rails
+Loading development environment in sandbox (Rails 4.2.5)
+Any modifications you make will be rolled back on exit
+2.2.1 :001 > User.new
+ => #<User id: nil, name: nil, email: nil, created_at: nil, updated_at: nil> 
+2.2.1 :002 > user = User.new(name: "Micheal Hartl", email:"mhartl@example.com")
+ => #<User id: nil, name: "Micheal Hartl", email: "mhartl@example.com", created_at: nil, updated_at: nil> 
+2.2.1 :003 > user.valid?
+ => true 
+2.2.1 :004 > user.save
+   (0.1ms)  SAVEPOINT active_record_1
+  SQL (0.5ms)  INSERT INTO "users" ("name", "email", "created_at", "updated_at") VALUES (?, ?, ?, ?)  [["name", "Micheal Hartl"], ["email", "mhartl@example.com"], ["created_at", "2015-12-10 10:08:41.225529"], ["updated_at", "2015-12-10 10:08:41.225529"]]
+   (0.1ms)  RELEASE SAVEPOINT active_record_1
+ => true 
+2.2.1 :005 > user
+ => #<User id: 1, name: "Micheal Hartl", email: "mhartl@example.com", created_at: "2015-12-10 10:08:41", updated_at: "2015-12-10 10:08:41"> 
+2.2.1 :006 > User.create(name: "A Nother", email: "another@example.com")
+   (0.1ms)  SAVEPOINT active_record_1
+  SQL (0.1ms)  INSERT INTO "users" ("name", "email", "created_at", "updated_at") VALUES (?, ?, ?, ?)  [["name", "A Nother"], ["email", "another@example.com"], ["created_at", "2015-12-10 10:09:56.057812"], ["updated_at", "2015-12-10 10:09:56.057812"]]
+   (0.0ms)  RELEASE SAVEPOINT active_record_1
+ => #<User id: 2, name: "A Nother", email: "another@example.com", created_at: "2015-12-10 10:09:56", updated_at: "2015-12-10 10:09:56"> 
+2.2.1 :007 > foo = User.create(name: "Foo", email: "foo@bar.com")
+   (0.1ms)  SAVEPOINT active_record_1
+  SQL (0.1ms)  INSERT INTO "users" ("name", "email", "created_at", "updated_at") VALUES (?, ?, ?, ?)  [["name", "Foo"], ["email", "foo@bar.com"], ["created_at", "2015-12-10 10:10:28.138126"], ["updated_at", "2015-12-10 10:10:28.138126"]]
+   (0.0ms)  RELEASE SAVEPOINT active_record_1
+ => #<User id: 3, name: "Foo", email: "foo@bar.com", created_at: "2015-12-10 10:10:28", updated_at: "2015-12-10 10:10:28"> 
+2.2.1 :008 > foo.destroy
+   (0.1ms)  SAVEPOINT active_record_1
+  SQL (0.1ms)  DELETE FROM "users" WHERE "users"."id" = ?  [["id", 3]]
+   (0.0ms)  RELEASE SAVEPOINT active_record_1
+ => #<User id: 3, name: "Foo", email: "foo@bar.com", created_at: "2015-12-10 10:10:28", updated_at: "2015-12-10 10:10:28"> 
+2.2.1 :009 > User.find(1)
+  User Load (0.2ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = ? LIMIT 1  [["id", 1]]
+ => #<User id: 1, name: "Micheal Hartl", email: "mhartl@example.com", created_at: "2015-12-10 10:08:41", updated_at: "2015-12-10 10:08:41"> 
+2.2.1 :010 > User.find(4)
+  User Load (0.1ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = ? LIMIT 1  [["id", 4]]
+ActiveRecord::RecordNotFound: Couldn't find User with 'id'=4
+2.2.1 :011 > User.find_by(email: "another@example.com")
+  User Load (0.3ms)  SELECT  "users".* FROM "users" WHERE "users"."email" = ? LIMIT 1  [["email", "another@example.com"]]
+ => #<User id: 2, name: "A Nother", email: "another@example.com", created_at: "2015-12-10 10:09:56", updated_at: "2015-12-10 10:09:56"> 
+2.2.1 :012 > User.first
+  User Load (0.1ms)  SELECT  "users".* FROM "users"  ORDER BY "users"."id" ASC LIMIT 1
+ => #<User id: 1, name: "Micheal Hartl", email: "mhartl@example.com", created_at: "2015-12-10 10:08:41", updated_at: "2015-12-10 10:08:41"> 
+2.2.1 :013 > User.all
+  User Load (0.2ms)  SELECT "users".* FROM "users"
+ => #<ActiveRecord::Relation [#<User id: 1, name: "Micheal Hartl", email: "mhartl@example.com", created_at: "2015-12-10 10:08:41", updated_at: "2015-12-10 10:08:41">, #<User id: 2, name: "A Nother", email: "another@example.com", created_at: "2015-12-10 10:09:56", updated_at: "2015-12-10 10:09:56">]> 
+```
+
