@@ -410,7 +410,7 @@ $ rails g model User name:string email:string
 $ bundle exec rake db:migrate
 $ rails console --sandbox
 ```
-```rails
+```ruby
 Loading development environment in sandbox (Rails 4.2.5)
 Any modifications you make will be rolled back on exit
 2.2.1 :001 > User.new
@@ -457,3 +457,46 @@ ActiveRecord::RecordNotFound: Couldn't find User with 'id'=4
   User Load (0.2ms)  SELECT "users".* FROM "users"
  => #<ActiveRecord::Relation [#<User id: 1, name: "Micheal Hartl", email: "mhartl@example.com", created_at: "2015-12-10 10:08:41", updated_at: "2015-12-10 10:08:41">, #<User id: 2, name: "A Nother", email: "another@example.com", created_at: "2015-12-10 10:09:56", updated_at: "2015-12-10 10:09:56">]> 
 ```
+
+#### User Validations
+
+* presence
+* length
+* email format
+* email uniqueness
+
+
+*app/models/user.rb*
+```ruby
+class User < ActiveRecord::Base
+
+  before_save { self.email = email.downcase}
+  validates :name, presence: true, length: { maximum: 50 }
+  VALID_EMAIL_REGEX = /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i
+  validates :email, presence: true, length: { maximum: 255 },
+                    format: { with: VALID_EMAIL_REGEX},
+                    uniqueness: { case_sensitive: false }
+end
+```
+```bash
+# Migration for enforcing email uniqueness
+$ rails g migration add_index_to_user_email
+      invoke  active_record
+      create    db/migrate/20151210110627_add_index_to_user_email.rb
+```
+
+*db/migrate/20151210110627_add_index_to_user_email.rb*
+```ruby
+class AddIndexToUserEmail < ActiveRecord::Migration
+  def change
+    add_index :users, :email, unique: true
+  end
+end
+```
+```bash
+$ bundle exec rake db:migrate
+$ rake test
+# empty db/fixtures/users.yml to fix ActiveRecod::RecordNotUnique exception
+$ rake test
+```
+
