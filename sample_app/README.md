@@ -410,7 +410,7 @@ $ rails g model User name:string email:string
 $ bundle exec rake db:migrate
 $ rails console --sandbox
 ```
-```ruby
+```bash
 Loading development environment in sandbox (Rails 4.2.5)
 Any modifications you make will be rolled back on exit
 2.2.1 :001 > User.new
@@ -500,3 +500,27 @@ $ rake test
 $ rake test
 ```
 
+#### Adding a Secure Password
+
+* Add has_secure_password in *app/models/user.rb*
+```bash
+# Migration for enforcing add
+$ rails g migration add_password_digest_to_users password_digest:string
+      invoke  active_record
+      create    db/migrate/20151210112418_add_password_digest_to_users.rb
+$ bundle exec rake db:migrate
+```
+*db/migrate/20151210112418_add_password_digest_to_users.rb*
+```ruby
+add_column :users, :password_digest, :string
+```
+* uncomment in *Gemfile* gem 'bcrypt' and launch $ bundle install
+* add password to setup in *test/models/user_test.rb*
+* create password length test and validation
+```bash
+2.2.1 :001 > User.create(name: "foo bar", email: "foo@bar.com", password: "foobar2015", password_confirmation: "foobar2015")
+2.2.1 :002 > user = User.find_by(email: "foo@bar.com")
+  User Load (0.2ms)  SELECT  "users".* FROM "users" WHERE "users"."email" = ? LIMIT 1  [["email", "foo@bar.com"]]
+2.2.1 :003 > user.authenticate("foobar2015")
+ => #<User id: 1, name: "foo bar", email: "foo@bar.com", created_at: "2015-12-10 11:44:13", updated_at: "2015-12-10 11:44:13", password_digest: "$2a$10$8Me1CLJuqs8U4SUtEz.3NOyJkuMyeXNqaT/VO/PC2ma..."> 
+```
