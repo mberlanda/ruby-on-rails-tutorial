@@ -457,4 +457,3 @@ ActiveRecord::RecordNotFound: Couldn't find User with 'id'=4
   User Load (0.2ms)  SELECT "users".* FROM "users"
  => #<ActiveRecord::Relation [#<User id: 1, name: "Micheal Hartl", email: "mhartl@example.com", created_at: "2015-12-10 10:08:41", updated_at: "2015-12-10 10:08:41">, #<User id: 2, name: "A Nother", email: "another@example.com", created_at: "2015-12-10 10:09:56", updated_at: "2015-12-10 10:09:56">]> 
 ```
-
