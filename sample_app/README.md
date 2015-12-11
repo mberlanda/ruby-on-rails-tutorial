@@ -412,8 +412,6 @@ $ rails g model User name:string email:string
       create      test/fixtures/users.yml
 $ bundle exec rake db:migrate
 $ rails console --sandbox
-```
-```bash
 Loading development environment in sandbox (Rails 4.2.5)
 Any modifications you make will be rolled back on exit
 2.2.1 :001 > User.new
@@ -582,3 +580,55 @@ $ rails generate integration_test users_login
       invoke  test_unit
       create    test/integration/users_login_test.rb
 ```
+
+#### Logging In:
+
+* include SessionsHelper in *app/controllers/application_controller.rb*
+*app/controllers/sessions_controller.rb*
+```ruby
+  def create
+    user = User.find_by(email: params[:session][:email].downcase)
+    if user && user.authenticate(params[:session][:password])
+      # Log the user in and redirect to the user's show page
+      log_in user
+      redirect_to user
+```
+*app/helpers/sessions_helper.rb*
+```ruby
+module SessionsHelper
+  #Log in the given user
+  def log_in(user)
+    session[:user_id] = user.id
+  end
+  # Returns the current logged-in user (if any)
+  def current_user
+    @current_user ||= User.find_by(id: session[:user_id])
+  end
+  # Returns true if the user is logged in, false otherwise
+  def logged_in?
+    !current_user.nil?
+  end
+end
+```
+* change the layout links for logged-in users in *app/views/layouts/_headers.html.haml*
+
+* test the login with valid information
+*app/models/user.rb*
+```ruby
+  # Returns the hash digest of the given string.
+  def User.digest(string)
+    cost = ActiveModel::SecurePassword.min_cost ? BCrypt::Engine::MIN_COST :
+                                                  BCrypt::Engine.cost
+  end
+``` 
+*test/fixtures/users.yml*
+*test/integration/users_login_test.rb*
+* login upon sign-up in *app/controller/users_controller.rb*
+*test/test_helper.rb*
+```ruby
+  # Returns true if a test user is logged in
+  def is_logged_in?
+    !session[:user_id].nil?
+  end
+```
+* assert is_logged-in in *test/integration/users_signup_test.rb*
