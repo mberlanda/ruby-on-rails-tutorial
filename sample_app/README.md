@@ -9,6 +9,9 @@ by [Micheal Hartl] (http://www.michealhartl.com/).
 * **[Chapter 4: Rails-Flavored Ruby](#cap4)**
 * **[Chapter 5: Filling in the Layout](#cap5)**
 * **[Chapter 6: Modeling Users](#cap6)**
+* **[Chapter 7: Sign Up](#cap7)**
+* **[Chapter 8: Log In, Log Out](#cap8)**
+
 
 <h2 id="cap3">Chapter 3: Mostly Static Pages</h2>
 
@@ -409,8 +412,6 @@ $ rails g model User name:string email:string
       create      test/fixtures/users.yml
 $ bundle exec rake db:migrate
 $ rails console --sandbox
-```
-```bash
 Loading development environment in sandbox (Rails 4.2.5)
 Any modifications you make will be rolled back on exit
 2.2.1 :001 > User.new
@@ -524,3 +525,207 @@ add_column :users, :password_digest, :string
 2.2.1 :003 > user.authenticate("foobar2015")
  => #<User id: 1, name: "foo bar", email: "foo@bar.com", created_at: "2015-12-10 11:44:13", updated_at: "2015-12-10 11:44:13", password_digest: "$2a$10$8Me1CLJuqs8U4SUtEz.3NOyJkuMyeXNqaT/VO/PC2ma..."> 
 ```
+
+<h2 id="cap7">Chapter 7: Sign Up</h2>
+
+branch: *sign-up*
+
+
+<h2 id="cap8">Chapter 8: Log In, Log Out</h2>
+
+branch: *log-in-log-out*
+
+#### Sessions:
+```bash
+$ rails g controller Sessions new
+    create  app/controllers/sessions_controller.rb
+     route  get 'sessions/new'
+    invoke  haml
+    create    app/views/sessions
+    create    app/views/sessions/new.html.haml
+    invoke  test_unit
+    create    test/controllers/sessions_controller_test.rb
+    invoke  helper
+    create    app/helpers/sessions_helper.rb
+    invoke    test_unit
+    invoke  assets
+    invoke    coffee
+    create      app/assets/javascripts/sessions.coffee
+    invoke    scss
+    create      app/assets/stylesheets/sessions.scss
+```
+*config/routes.rb*
+```ruby
+get 'login' => 'sessions#new'
+post 'login' => 'sessions#create'
+delete 'logout' => 'sessions#destroy'
+```
+* edit *app/views/sessions/new.html.haml*
+* edit *app/controllers/sessions_controller.rb*
+```ruby
+  def create
+    user = User.find_by(email: params[:session][:email].downcase)
+    if user && user.authenticate(params[:session][:password])
+      # Log the user in and redirect to the user's show page
+    else
+      # Create an error message
+      flash.now[:danger] = 'Invalid email/password combination' # Not quite right
+      render 'new'
+    end
+  end
+```
+* create a test
+```bash
+$ rails generate integration_test users_login
+      invoke  test_unit
+      create    test/integration/users_login_test.rb
+```
+
+#### Logging In:
+
+* include SessionsHelper in *app/controllers/application_controller.rb*
+*app/controllers/sessions_controller.rb*
+```ruby
+  def create
+    user = User.find_by(email: params[:session][:email].downcase)
+    if user && user.authenticate(params[:session][:password])
+      # Log the user in and redirect to the user's show page
+      log_in user
+      redirect_to user
+```
+*app/helpers/sessions_helper.rb*
+```ruby
+module SessionsHelper
+  #Log in the given user
+  def log_in(user)
+    session[:user_id] = user.id
+  end
+  # Returns the current logged-in user (if any)
+  def current_user
+    @current_user ||= User.find_by(id: session[:user_id])
+  end
+  # Returns true if the user is logged in, false otherwise
+  def logged_in?
+    !current_user.nil?
+  end
+end
+```
+* change the layout links for logged-in users in *app/views/layouts/_headers.html.haml*
+
+* test the login with valid information
+*app/models/user.rb*
+```ruby
+  # Returns the hash digest of the given string.
+  def User.digest(string)
+    cost = ActiveModel::SecurePassword.min_cost ? BCrypt::Engine::MIN_COST :
+                                                  BCrypt::Engine.cost
+  end
+``` 
+*test/fixtures/users.yml*
+*test/integration/users_login_test.rb*
+* login upon sign-up in *app/controller/users_controller.rb*
+*test/test_helper.rb*
+```ruby
+  # Returns true if a test user is logged in
+  def is_logged_in?
+    !session[:user_id].nil?
+  end
+```
+* assert is_logged-in in *test/integration/users_signup_test.rb*
+
+#### Logging Out:
+
+* log out function as session.delete(:user_id) in *app/helpers/sessions_helper.rb*
+
+*app/controllers/sessions_controller.rb*
+```ruby
+  def destroy
+    log_out
+    redirect_to root_url
+  end
+```
+
+#### Remember Me:
+
+* Rememeber Token and Digest
+```bash
+$ rails g migration add_remember_digest_to_users remember_digest:string
+      invoke  active_record
+      create    db/migrate/20151214162937_add_remember_digest_to_users.rb
+$ bundle exec rake db:migrate
+```
+*app/models/user.rb*
+```ruby
+class User < ActiveRecord::Base
+
+  attr_accessor :remember_token
+  ...
+  # Returns a random token
+  def User.new_token
+    SecureRandom.urlsafe_base64
+  end
+
+  # Remembers a user in the database for use in persisten sessions
+  def remember
+    self.remember_token = User.new_token
+    update_attribute(:remember_digest, User.digest(remember_token))
+  end
+
+  # Returns true if the given token matches the digest
+  def authenticated? (remember_token)
+    BCrypt::Password.new(remember_digest).is_password?(remember_token)
+  end
+
+  # Forget a user
+  def forget
+    update_attribute(:remember_digest, nil)
+  end
+end
+```
+* Update def create > remember_user in *app/controllers/sessions_controller.rb*
+
+*app/helpers/sessions_helper.rb*
+```ruby
+  # Remembers a user in a persistent session
+  def remember(user)
+    user.remember
+    cookies.permanent.signed[:user_id] = user.id
+    cookies.permanent[:remember_token] = user.remember_token
+  end
+  
+  # Returns the user corresponding to the remember toekn cookie
+  def current_user
+    if (user_id = session[:user_id])
+      @current_user ||= User.find_by(id: user_id)
+    elsif (user_id = cookies.signed[:user_id])
+      user = User.find_by(id: user_id)
+      if user && user.authenticated?(cookies[:remember_token])
+        log_in user
+        @current_user = user
+      end
+    end
+  end
+
+    # Forgets a persistent session
+  def forget(user)
+    user.forget
+    cookies.delete(:user_id)
+    cookies.delete(:remember_token)
+  end
+  
+  # Log out the current user:
+  def log_out
+    forget(current_user)
+    session.delete(:user_id)
+    @current_user = nil
+  end
+```
+*app/controllers/sessions_controller.rb*
+```ruby
+  def destroy
+    log_out if logged_in?
+    redirect_to root_url
+  end
+```
+
+* Add "remember me" check box to the login form
