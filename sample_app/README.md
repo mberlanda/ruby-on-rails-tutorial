@@ -632,3 +632,15 @@ end
   end
 ```
 * assert is_logged-in in *test/integration/users_signup_test.rb*
+
+#### Logging Out:
+
+* log out function as session.delete(:user_id) in *app/helpers/sessions_helper.rb*
+
+*app/controllers/sessions_controller.rb*
+```ruby
+  def destroy
+    log_out
+    redirect_to root_url
+  end
+```
