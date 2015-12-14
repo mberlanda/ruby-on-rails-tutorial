@@ -644,3 +644,88 @@ end
     redirect_to root_url
   end
 ```
+
+#### Remember Me:
+
+* Rememeber Token and Digest
+```bash
+$ rails g migration add_remember_digest_to_users remember_digest:string
+      invoke  active_record
+      create    db/migrate/20151214162937_add_remember_digest_to_users.rb
+$ bundle exec rake db:migrate
+```
+*app/models/user.rb*
+```ruby
+class User < ActiveRecord::Base
+
+  attr_accessor :remember_token
+  ...
+  # Returns a random token
+  def User.new_token
+    SecureRandom.urlsafe_base64
+  end
+
+  # Remembers a user in the database for use in persisten sessions
+  def remember
+    self.remember_token = User.new_token
+    update_attribute(:remember_digest, User.digest(remember_token))
+  end
+
+  # Returns true if the given token matches the digest
+  def authenticated? (remember_token)
+    BCrypt::Password.new(remember_digest).is_password?(remember_token)
+  end
+
+  # Forget a user
+  def forget
+    update_attribute(:remember_digest, nil)
+  end
+end
+```
+* Update def create > remember_user in *app/controllers/sessions_controller.rb*
+
+*app/helpers/sessions_helper.rb*
+```ruby
+  # Remembers a user in a persistent session
+  def remember(user)
+    user.remember
+    cookies.permanent.signed[:user_id] = user.id
+    cookies.permanent[:remember_token] = user.remember_token
+  end
+  
+  # Returns the user corresponding to the remember toekn cookie
+  def current_user
+    if (user_id = session[:user_id])
+      @current_user ||= User.find_by(id: user_id)
+    elsif (user_id = cookies.signed[:user_id])
+      user = User.find_by(id: user_id)
+      if user && user.authenticated?(cookies[:remember_token])
+        log_in user
+        @current_user = user
+      end
+    end
+  end
+
+    # Forgets a persistent session
+  def forget(user)
+    user.forget
+    cookies.delete(:user_id)
+    cookies.delete(:remember_token)
+  end
+  
+  # Log out the current user:
+  def log_out
+    forget(current_user)
+    session.delete(:user_id)
+    @current_user = nil
+  end
+```
+*app/controllers/sessions_controller.rb*
+```ruby
+  def destroy
+    log_out if logged_in?
+    redirect_to root_url
+  end
+```
+
+* Add "remember me" check box to the login form
