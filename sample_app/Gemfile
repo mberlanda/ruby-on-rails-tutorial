@@ -28,6 +28,13 @@ gem 'sdoc', '~> 0.4.0', group: :doc
 # Use ActiveModel has_secure_password
 gem 'bcrypt', '~> 3.1.7'
 
+# Fake attributes generator
+gem 'faker'
+
+# Use for pagination purposes
+gem 'will_paginate'
+gem 'bootstrap-will_paginate'
+
 # Use Unicorn as the app server
 # gem 'unicorn'
 

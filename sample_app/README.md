@@ -11,6 +11,7 @@ by [Micheal Hartl] (http://www.michealhartl.com/).
 * **[Chapter 6: Modeling Users](#cap6)**
 * **[Chapter 7: Sign Up](#cap7)**
 * **[Chapter 8: Log In, Log Out](#cap8)**
+* **[Chapter 9: Updating, Showing, and Deleting Users](#cap9)**
 
 
 <h2 id="cap3">Chapter 3: Mostly Static Pages</h2>
@@ -729,3 +730,335 @@ end
 ```
 
 * Add "remember me" check box to the login form
+
+
+<h2 id="cap9">Chapter 9: Updating, Showing, and Deleting Users</h2>
+
+
+#### Update Users:
+
+* def edit in *app/controllers/users_controller.rb*
+*app/views/users/edit/.html.haml
+```haml
+- provide(:title, "Edit user")
+%h1 Update your Profile
+.row
+  .col-md-6.col-md-offset-3
+    = form_for(@user) do |f|
+      = render 'shared/error_messages'
+
+      = f.label :name
+      = f.text_field :name, class: 'form-control'
+
+      = f.label :email
+      = f.email_field :email, class: 'form-control'
+
+      = f.label :password
+      = f.password_field :password, class: 'form-control'
+
+      = f.label :password_confirmation, "Confirmation"
+      = f.password_field :password_confirmation, class: 'form-control'
+
+      = f.submit "Save changes", class: "btn btn-primary"
+
+    .gravatar_edit
+      = gravatar_for @user
+      = link_to "change", "http://gravatar.com/emails", target:"_blank"
+```
+
+*app/controllers/users_controller.rb*
+```ruby
+  def edit
+    @user = User.find(params[:id])
+  end
+
+  def update
+    @user = User.find(params[:id])
+    if @user.update_attributes(user_params)
+        flash[:success] = "Profile updated"
+        redirect_to @user
+    else
+      render 'edit'
+    end
+  end
+```
+* password, allow_blank: true in *app/models/users.rb*
+```bash
+$ rails g integration_test users_edit
+```
+
+#### Authorization:
+
+* Require logged-in users
+
+*app/controllers/users_controller.rb*
+```ruby
+class UsersController < ApplicationController
+  before_action :logged_in_user, only: [:edit, :update]
+  ...
+  # Before Filters
+
+  def logged_in_user
+    unless logged_in?
+      flash[:danger] = "Please log in."
+      redirect_to login_url
+    end
+  end
+```
+
+* Require the Right User
+```ruby
+class UsersController < ApplicationController
+  before_action :logged_in_user, only: [:edit, :update]
+  before_action :correct_user, only: [:edit, :update]
+  # ...
+  # Before Filters
+  # ...
+  def correct_user
+    @user = User.find(params[:id])
+    redirect_to(root_url) unless @user == current_user
+  end
+```
+
+*app/helpers/sessions_helper.rb*
+```ruby
+  def current_user? (user)
+    user == current_user
+  end
+```
+*app/controllers/users_controller.rb*
+```ruby
+  def correct_user
+    @user = User.find(params[:id])
+    redirect_to(root_url) unless current_user?(@user)
+  end
+```
+
+* Friendly Forwarding:
+
+*app/helpers/sessions_helper.rb*
+```ruby
+  # Redirects to stored location (or to the default)
+  def redirect_back_or(default)
+    redirect_to(session[:forwarding_url] || default)
+    session.delete(:forwarding_url)
+  end
+
+  # Stores the URL tryung to be accessed
+  def store_location
+    session[:forwarding_url] = request.url if request.get?
+  end
+```
+*app/controllers/users_controller.rb*
+```ruby
+  def logged_in_user
+    unless logged_in?
+      store_location
+      flash[:danger] = "Please log in."
+      redirect_to login_url
+    end
+  end
+```
+*app/controllers/sessions_controller.rb*
+```ruby
+  def create
+    @user = User.find_by(email: params[:session][:email].downcase)
+    if @user && @user.authenticate(params[:session][:password])
+      log_in @user
+      params[:session][:remember_me] == '1' ? remember(@user) : forget(@user)
+      redirect_back_or @user
+```
+
+#### Showing All Users:
+
+*app/controllers/users_controller.rb*
+```ruby
+class UsersController < ApplicationController
+before_action :logged_in_user, only: [:index, :edit, :update]
+...
+  def index
+    @users = User.all
+  end
+```
+*app/views/users/index.html.haml*
+```haml
+- provide(:title, "All users")
+%h1 All users
+%ul.users
+  - @users.each do |user|
+    %li
+      = gravatar_for user, size: 50
+      = link_to user.name, user
+```
+*app/stylesheets/custom.css.scss*
+```css
+/* User index */
+.users{
+  list-style: none;
+  margin: 0;
+  li {
+    overflow: auto;
+    padding: 10px 0;
+    border-bottom: 1px solid $gray-lighter;
+  }
+}
+```
+
+* Sample Users: Add 'faker' to Gemfile
+*db/seeds.rb*
+```ruby
+User.create!(name: "Example User",
+             email: "example@railstutorial.org",
+             password: "foobar",
+             password_confirmation: "foobar")
+
+99.times do |n|
+  name = Faker::Name.name
+  email = "example-#{n+1}@railstutorial.org"
+  password = "password"
+  User.create!( name: name, 
+                email: email, 
+                password: password, 
+                password_confirmation: password )
+end
+```
+```bash
+$ bundle install
+$ bundle exec rake db:migrate:reset
+$ bundle exec rake db:seed
+```
+
+* Pagination: Add 'will_paginate' and 'bootstrap-will_paginate' to Gemfile
+*app/views/users/index.html.haml*
+```haml
+- provide(:title, "All users")
+%h1 All users
+= will_paginate
+%ul.users
+...
+= will_paginate
+```
+*app/controllers/users_controller.rb*
+```ruby
+class UsersController < ApplicationController
+before_action :logged_in_user, only: [:index, :edit, :update]
+...
+  def index
+    @users = User.paginate(page: params[:page])
+  end
+```
+
+* Users Index Test
+*test/fixtures/users.yml*
+```yml
+<% 30.times do |n| %>
+user_<%= n %>:
+  name: <%= "User #{n}" %>
+  email: <%= "user-#{n}@example.org" %>
+  password_digest: <%= User.digest('password') %>
+<% end %>
+```
+```bash
+$ bundle install
+$ rails generate integration_test users_index
+```
+*test/integartion/users_index_test.rb*
+```ruby
+require 'test_helper'
+
+class UsersIndexTest < ActionDispatch::IntegrationTest
+
+  def setup
+    @user = users(:micheal)
+  end
+
+  test "index including pagination" do
+    log_in_as(@user)
+    get users_path
+    assert_template 'users/index'
+    assert_select 'div.pagination'
+    User.paginate(page: 1).each do |user|
+      assert_select 'a[href=?]', user_path(user), text: user.name
+    end   
+  end
+end
+```
+
+* Partial refactoring
+*app/views/users/index.html.haml*
+```haml
+%ul.users
+  - @users.each do |user|
+    = render user
+```
+*app/views/users/_user.html.haml*
+```haml
+%li
+  = gravatar_for user, size: 50
+  = link_to user.name, user
+```
+*app/views/users/index.html.haml*
+```haml
+%ul.users
+  render @users
+```
+
+#### Deleting Users:
+```bash
+#Create administrator users
+$ rails generate migration add_admin_to_users admin:boolean
+# Add default: false in the migration file
+$ bundle exec rake db:migrate
+$ rails c --sandbox
+>> user = User.first
+>> user.toggle!(:admin) # change the value from false to true
+# change db/seeds.rb to add admin: true for the first user
+$ bundle exec rake db:migrate:reset
+$ bundle exec rake db:seed
+```
+*app/views/users/_user.html.haml*
+```haml
+%li
+  = gravatar_for user, size: 50
+  = link_to user.name, user
+  - if current_user.admin? && !current_user?(user)
+    | #{link_to "delete", user, method: :delete, data: { confirm: "You sure?" }}
+```
+*app/controllers/users_controller.rb*
+```ruby
+class UsersController < ApplicationController
+before_action :logged_in_user, only: [:index, :edit, :update, :destroy]
+before_action :admin_user, only: [:destroy]
+...
+  def destroy
+    User.find(params[:id]).destroy
+    flash[:success] = "User deleted"
+    redirect_to users_url
+  end
+...
+  def admin_user
+    redirect_to(root_url) unless current_user.admin?
+  end
+```
+*test/fixtures/users.yml*
+```yml
+# make one user admin
+  admin: true
+```
+*test/controllers/users_controller_test.rb*
+```ruby
+  test "should redirect destroy when not logged in" do
+    assert_no_difference 'User.count' do
+      delete :destroy, id: @user
+    end
+    assert_redirected_to login_url
+  end
+
+  test "should redirect destroy when logged user as non-admin" do
+    log_in_as(@other_user)
+    assert_no_difference 'User.count' do
+      delete :destroy, id: @user
+    end
+    assert_redirected_to root_url
+  end
+```
