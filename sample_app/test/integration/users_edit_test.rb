@@ -34,7 +34,7 @@ class UsersEditTest < ActionDispatch::IntegrationTest
     assert_equal @user.email, email
   end
 
-  test "successful edit with  friendly forwarding" do
+  test "successful edit with friendly forwarding" do
     get edit_user_path(@user)
     log_in_as(@user)
     assert_redirected_to edit_user_path(@user)
@@ -49,6 +49,17 @@ class UsersEditTest < ActionDispatch::IntegrationTest
     @user.reload
     assert_equal @user.name, name
     assert_equal @user.email, email
+  end
+
+  test "session uses :forwarding_url only one time" do
+    get edit_user_path(@user)
+    log_in_as(@user)
+    assert_redirected_to edit_user_path(@user)
+    get root_path
+    # second login attempt
+    log_in_as(@user)
+    curl = request.original_fullpath
+    assert_not_equal curl, edit_user_path(@user)
   end
 
 end
