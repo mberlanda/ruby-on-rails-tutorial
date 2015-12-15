@@ -55,11 +55,8 @@ class UsersEditTest < ActionDispatch::IntegrationTest
     get edit_user_path(@user)
     log_in_as(@user)
     assert_redirected_to edit_user_path(@user)
-    get root_path
-    # second login attempt
-    log_in_as(@user)
-    curl = request.original_fullpath
-    assert_not_equal curl, edit_user_path(@user)
+    assert_not_nil cookies['user_id']
+    assert_nil cookies['forwarding_url']
   end
 
 end
