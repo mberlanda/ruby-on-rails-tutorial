@@ -11,6 +11,7 @@ by [Micheal Hartl] (http://www.michealhartl.com/).
 * **[Chapter 6: Modeling Users](#cap6)**
 * **[Chapter 7: Sign Up](#cap7)**
 * **[Chapter 8: Log In, Log Out](#cap8)**
+* **[Chapter 9: Updating, Showing, and Deleting Users](#cap9)**
 
 
 <h2 id="cap3">Chapter 3: Mostly Static Pages</h2>
@@ -729,3 +730,56 @@ end
 ```
 
 * Add "remember me" check box to the login form
+
+
+<h2 id="cap9">Chapter 9: Updating, Showing, and Deleting Users</h2>
+
+* def edit in *app/controllers/users_controller.rb*
+*app/views/users/edit/.html.haml
+```haml
+- provide(:title, "Edit user")
+%h1 Update your Profile
+.row
+  .col-md-6.col-md-offset-3
+    = form_for(@user) do |f|
+      = render 'shared/error_messages'
+
+      = f.label :name
+      = f.text_field :name, class: 'form-control'
+
+      = f.label :email
+      = f.email_field :email, class: 'form-control'
+
+      = f.label :password
+      = f.password_field :password, class: 'form-control'
+
+      = f.label :password_confirmation, "Confirmation"
+      = f.password_field :password_confirmation, class: 'form-control'
+
+      = f.submit "Save changes", class: "btn btn-primary"
+
+    .gravatar_edit
+      = gravatar_for @user
+      = link_to "change", "http://gravatar.com/emails", target:"_blank"
+```
+
+*app/controllers/users_controllers.rb*
+```ruby
+  def edit
+    @user = User.find(params[:id])
+  end
+
+  def update
+    @user = User.find(params[:id])
+    if @user.update_attributes(user_params)
+        flash[:success] = "Profile updated"
+        redirect_to @user
+    else
+      render 'edit'
+    end
+  end
+```
+* password, allow_blank: true in *app/models/users.rb*
+```bash
+$ rails g integration_test users_edit
+```
