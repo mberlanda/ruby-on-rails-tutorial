@@ -734,6 +734,9 @@ end
 
 <h2 id="cap9">Chapter 9: Updating, Showing, and Deleting Users</h2>
 
+
+#### Update Users:
+
 * def edit in *app/controllers/users_controller.rb*
 *app/views/users/edit/.html.haml
 ```haml
@@ -763,7 +766,7 @@ end
       = link_to "change", "http://gravatar.com/emails", target:"_blank"
 ```
 
-*app/controllers/users_controllers.rb*
+*app/controllers/users_controller.rb*
 ```ruby
   def edit
     @user = User.find(params[:id])
@@ -782,4 +785,86 @@ end
 * password, allow_blank: true in *app/models/users.rb*
 ```bash
 $ rails g integration_test users_edit
+```
+
+#### Authorization:
+
+* Require logged-in users
+
+*app/controllers/users_controller.rb*
+```ruby
+class UsersController < ApplicationController
+  before_action :logged_in_user, only: [:edit, :update]
+  ...
+  # Before Filters
+
+  def logged_in_user
+    unless logged_in?
+      flash[:danger] = "Please log in."
+      redirect_to login_url
+    end
+  end
+```
+
+* Require the Right User
+```ruby
+class UsersController < ApplicationController
+  before_action :logged_in_user, only: [:edit, :update]
+  before_action :correct_user, only: [:edit, :update]
+  # ...
+  # Before Filters
+  # ...
+  def correct_user
+    @user = User.find(params[:id])
+    redirect_to(root_url) unless @user == current_user
+  end
+```
+
+*app/helpers/sessions_helper.rb*
+```ruby
+  def current_user? (user)
+    user == current_user
+  end
+```
+*app/controllers/users_controller.rb*
+```ruby
+  def correct_user
+    @user = User.find(params[:id])
+    redirect_to(root_url) unless current_user?(@user)
+  end
+```
+
+* Friendly Forwarding:
+
+*app/helpers/sessions_helper.rb*
+```ruby
+  # Redirects to stored location (or to the default)
+  def redirect_back_or(default)
+    redirect_to(session[:forwarding_url] || default)
+    session.delete(:forwarding_url)
+  end
+
+  # Stores the URL tryung to be accessed
+  def store_location
+    session[:forwarding_url] = request.url if request.get?
+  end
+```
+*app/controllers/users_controller.rb*
+```ruby
+  def logged_in_user
+    unless logged_in?
+      store_location
+      flash[:danger] = "Please log in."
+      redirect_to login_url
+    end
+  end
+```
+*app/controllers/sessions_controller.rb*
+```ruby
+  def create
+    @user = User.find_by(email: params[:session][:email].downcase)
+    if @user && @user.authenticate(params[:session][:password])
+      log_in @user
+      params[:session][:remember_me] == '1' ? remember(@user) : forget(@user)
+      redirect_back_or @user
 ```
