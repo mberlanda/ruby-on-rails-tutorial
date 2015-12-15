@@ -8,7 +8,7 @@ class UsersControllerTest < ActionController::TestCase
     @other_user = users(:archer)
   end
   
-  test "shoulde redirect index when not logged in" do
+  test "should redirect index when not logged in" do
     get :index
     assert_redirected_to login_url
   end
@@ -44,4 +44,19 @@ class UsersControllerTest < ActionController::TestCase
     assert flash.empty?
     assert_redirected_to root_url
   end  
+
+  test "should redirect destroy when not logged in" do
+    assert_no_difference 'User.count' do
+      delete :destroy, id: @user
+    end
+    assert_redirected_to login_url
+  end
+
+  test "should redirect destroy when logged user as non-admin" do
+    log_in_as(@other_user)
+    assert_no_difference 'User.count' do
+      delete :destroy, id: @user
+    end
+    assert_redirected_to root_url
+  end
 end

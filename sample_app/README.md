@@ -1002,3 +1002,63 @@ end
 %ul.users
   render @users
 ```
+
+#### Deleting Users:
+```bash
+#Create administrator users
+$ rails generate migration add_admin_to_users admin:boolean
+# Add default: false in the migration file
+$ bundle exec rake db:migrate
+$ rails c --sandbox
+>> user = User.first
+>> user.toggle!(:admin) # change the value from false to true
+# change db/seeds.rb to add admin: true for the first user
+$ bundle exec rake db:migrate:reset
+$ bundle exec rake db:seed
+```
+*app/views/users/_user.html.haml*
+```haml
+%li
+  = gravatar_for user, size: 50
+  = link_to user.name, user
+  - if current_user.admin? && !current_user?(user)
+    | #{link_to "delete", user, method: :delete, data: { confirm: "You sure?" }}
+```
+*app/controllers/users_controller.rb*
+```ruby
+class UsersController < ApplicationController
+before_action :logged_in_user, only: [:index, :edit, :update, :destroy]
+before_action :admin_user, only: [:destroy]
+...
+  def destroy
+    User.find(params[:id]).destroy
+    flash[:success] = "User deleted"
+    redirect_to users_url
+  end
+...
+  def admin_user
+    redirect_to(root_url) unless current_user.admin?
+  end
+```
+*test/fixtures/users.yml*
+```yml
+# make one user admin
+  admin: true
+```
+*test/controllers/users_controller_test.rb*
+```ruby
+  test "should redirect destroy when not logged in" do
+    assert_no_difference 'User.count' do
+      delete :destroy, id: @user
+    end
+    assert_redirected_to login_url
+  end
+
+  test "should redirect destroy when logged user as non-admin" do
+    log_in_as(@other_user)
+    assert_no_difference 'User.count' do
+      delete :destroy, id: @user
+    end
+    assert_redirected_to root_url
+  end
+```
