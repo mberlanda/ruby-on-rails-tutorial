@@ -868,3 +868,137 @@ class UsersController < ApplicationController
       params[:session][:remember_me] == '1' ? remember(@user) : forget(@user)
       redirect_back_or @user
 ```
+
+#### Showing All Users:
+
+*app/controllers/users_controller.rb*
+```ruby
+class UsersController < ApplicationController
+before_action :logged_in_user, only: [:index, :edit, :update]
+...
+  def index
+    @users = User.all
+  end
+```
+*app/views/users/index.html.haml*
+```haml
+- provide(:title, "All users")
+%h1 All users
+%ul.users
+  - @users.each do |user|
+    %li
+      = gravatar_for user, size: 50
+      = link_to user.name, user
+```
+*app/stylesheets/custom.css.scss*
+```css
+/* User index */
+.users{
+  list-style: none;
+  margin: 0;
+  li {
+    overflow: auto;
+    padding: 10px 0;
+    border-bottom: 1px solid $gray-lighter;
+  }
+}
+```
+
+* Sample Users: Add 'faker' to Gemfile
+*db/seeds.rb*
+```ruby
+User.create!(name: "Example User",
+             email: "example@railstutorial.org",
+             password: "foobar",
+             password_confirmation: "foobar")
+
+99.times do |n|
+  name = Faker::Name.name
+  email = "example-#{n+1}@railstutorial.org"
+  password = "password"
+  User.create!( name: name, 
+                email: email, 
+                password: password, 
+                password_confirmation: password )
+end
+```
+```bash
+$ bundle install
+$ bundle exec rake db:migrate:reset
+$ bundle exec rake db:seed
+```
+
+* Pagination: Add 'will_paginate' and 'bootstrap-will_paginate' to Gemfile
+*app/views/users/index.html.haml*
+```haml
+- provide(:title, "All users")
+%h1 All users
+= will_paginate
+%ul.users
+...
+= will_paginate
+```
+*app/controllers/users_controller.rb*
+```ruby
+class UsersController < ApplicationController
+before_action :logged_in_user, only: [:index, :edit, :update]
+...
+  def index
+    @users = User.paginate(page: params[:page])
+  end
+```
+
+* Users Index Test
+*test/fixtures/users.yml*
+```yml
+<% 30.times do |n| %>
+user_<%= n %>:
+  name: <%= "User #{n}" %>
+  email: <%= "user-#{n}@example.org" %>
+  password_digest: <%= User.digest('password') %>
+<% end %>
+```
+```bash
+$ bundle install
+$ rails generate integration_test users_index
+```
+*test/integartion/users_index_test.rb*
+```ruby
+require 'test_helper'
+
+class UsersIndexTest < ActionDispatch::IntegrationTest
+
+  def setup
+    @user = users(:micheal)
+  end
+
+  test "index including pagination" do
+    log_in_as(@user)
+    get users_path
+    assert_template 'users/index'
+    assert_select 'div.pagination'
+    User.paginate(page: 1).each do |user|
+      assert_select 'a[href=?]', user_path(user), text: user.name
+    end   
+  end
+end
+```
+
+* Partial refactoring
+*app/views/users/index.html.haml*
+```haml
+%ul.users
+  - @users.each do |user|
+    = render user
+```
+*app/views/users/_user.html.haml*
+```haml
+%li
+  = gravatar_for user, size: 50
+  = link_to user.name, user
+```
+*app/views/users/index.html.haml*
+```haml
+%ul.users
+  render @users
+```
