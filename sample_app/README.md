@@ -12,6 +12,7 @@ by [Micheal Hartl] (http://www.michealhartl.com/).
 * **[Chapter 7: Sign Up](#cap7)**
 * **[Chapter 8: Log In, Log Out](#cap8)**
 * **[Chapter 9: Updating, Showing, and Deleting Users](#cap9)**
+* **[Chapter 10: Account Activation and Password Reset](#cap9)**
 
 
 <h2 id="cap3">Chapter 3: Mostly Static Pages</h2>
@@ -1062,3 +1063,333 @@ before_action :admin_user, only: [:destroy]
     assert_redirected_to root_url
   end
 ```
+
+<h2 id="cap10">Chapter 10: Account Activation and Password Reset</h2>
+
+#### Account activation:
+
+```bash
+$ rails generate controller AccountActivations --no-test-framework
+      create  app/controllers/account_activations_controller.rb
+      invoke  haml
+      create    app/views/account_activations
+      invoke  helper
+      create    app/helpers/account_activations_helper.rb
+      invoke  assets
+      invoke    coffee
+      create      app/assets/javascripts/account_activations.coffee
+      invoke    scss
+      create      app/assets/stylesheets/account_activations.scss
+```
+*config/routes.rb*
+```ruby
+  resources :account_activations, only: [:edit]
+```
+```bash
+$ rails generate migration add_activation_to_users \
+> activation_digest:string activated:boolean activated_at:datetime
+# edit migration file adding :activated, default: false
+$ bundle exec rake db:migrate
+```
+*app/models/user.rb*
+```ruby
+class User < ActiveRecord::Base
+  attr_accessor :remember_token, :activation_token
+  before_save { email.downcase!}
+  before_create :create_activation_digest
+  ...  
+  private
+
+    # Creates and assigns the activation token and digest
+    def create_activation_digest
+      self.activation_token = User.new_token
+      self.activation_digest = User.digest(activation_token)
+    end
+```
+```bash
+# update db/seeds.rb and test/fixtures/users.yml
+$ bundle exec rake db:migrate:reset
+$ bundle exec rake db:seed
+# Account activation mailer method
+$ rails generate mailer UserMailer account_activation password_reset
+      create  app/mailers/user_mailer.rb
+      create  app/mailers/application_mailer.rb
+      invoke  haml
+      create    app/views/user_mailer
+      create    app/views/layouts/mailer.text.haml
+      create    app/views/layouts/mailer.html.haml
+      create    app/views/user_mailer/account_activation.text.haml
+      create    app/views/user_mailer/account_activation.html.haml
+      create    app/views/user_mailer/password_reset.text.haml
+      create    app/views/user_mailer/password_reset.html.haml
+      invoke  test_unit
+      create    test/mailers/user_mailer_test.rb
+      create    test/mailers/previews/user_mailer_preview.rb
+```
+*app/mailers/application_mailer.rb*
+```ruby
+class ApplicationMailer < ActionMailer::Base
+  default from: "noreply@example.com"
+  layout 'mailer'
+end
+```
+*app/views/user_mailer/account_activation.html.haml*
+```haml
+%h1 Sample App
+%p
+  Welcome to the Sample App! Click on the link below to activate your account:
+= link_to "Activate", edit_account_activation_url(@user.activation_token, email: @user.email)
+```
+*config/environments/development.rb*
+```ruby
+  config.action_mailer.raise_delivery_errors = false
+  config.action_mailer.delivery_method = :test
+  host = 'localhost:3000'
+  config.action_mailer.default_url_options = { host: host }
+```
+*test/mailers/previews/user_mailer_preview.rb*
+```ruby
+# Preview all emails at http://localhost:3000/rails/mailers/user_mailer
+class UserMailerPreview < ActionMailer::Preview
+  # Preview this email at http://localhost:3000/rails/mailers/user_mailer/account_activation
+  def account_activation
+    user = User.first
+    user.activation_token = User.new_token
+    UserMailer.account_activation(user)
+  end
+  ```
+*test/mailers/user_mailer_test.rb*
+```ruby
+class UserMailerTest < ActionMailer::TestCase
+  test "account_activation" do
+    user = users(:micheal)
+    user.activation_token = User.new_token
+    mail = UserMailer.account_activation(user)
+    assert_equal "Account activation", mail.subject
+    assert_equal [user.email], mail.to
+    assert_equal ["noreply@example.com"], mail.from
+    assert_match user.name, mail.body.encoded
+    assert_match user.activation_token, mail.body.encoded
+    assert_match CGI::escape(user.email), mail.body.encoded
+  end
+end
+```
+*config/environments/test.rb*
+```ruby
+  config.action_mailer.delivery_method = :test
+  config.action_mailer.default_url_options = { host: 'example.com' }
+```
+*app/controllers/users_controller.rb*
+```ruby
+def create
+    @user = User.new(user_params)
+    if @user.save
+      UserMailer.account_activation(@user).deliver_now
+      flash[:info] = "Please check your email to activate your account."
+      redirect_to root_url
+    else
+      render 'new'
+    end
+  end
+```
+*app/models/user.rb*
+```ruby
+  # Returns true if the given token matches the digest
+  def authenticated? (attribute, token)
+    digest = send("#{attribute}_digest")
+    return false if digest.nil?
+    BCrypt::Password.new(digest).is_password?(token)
+  end
+=begin
+Create a generalized authenticated? method allows to authenticate any token (e.g. remember_digest, activation_token)
+need to fix 
+app/helpers/sessions_helper.rb
+app/test/models/user_test.rb
+=end
+```
+*app/controllers/account_activations_controller.rb*
+```ruby
+  def edit
+    user = User.find_by(email: params[:email])
+    if user && user.authenticated?(:activation, params[:id])
+      user.update_attribute(:activated, true)
+      user.update_attribute(:activated_at, Time.zone.now)
+      log_in user
+      flash[:success] = "Account activated!"
+      redirect_to user
+    else
+      flash[:danger] = "Invalid activation link"
+      redirect_to root_url
+    end
+  end
+# update app/controllers/sessions_controller.rb
+```
+*app/models/user.rb*
+```ruby
+  # Activate an account
+  def activate
+    update_attribute(:activate, true)
+    update_attribute(:activate_at, Time.zone.now)
+  end
+  # Sends activation email
+  def send_activation_email
+    UserMailer.account_activation(self).deliver_now
+  end
+
+# refactor app/controllers/users_controller.rb
+# refactor app/controllers/account_activations_controller.rb
+```
+
+#### Password Reset:
+
+```bash
+$ rails generate controller PasswordResets --no-test-framework
+      create  app/controllers/password_resets_controller.rb
+      invoke  haml
+      create    app/views/password_resets
+      invoke  helper
+      create    app/helpers/password_resets_helper.rb
+      invoke  assets
+      invoke    coffee
+      create      app/assets/javascripts/password_resets.coffee
+      invoke    scss
+      create      app/assets/stylesheets/password_resets.scss
+```
+*config/routes.rb
+```ruby
+resources :password_resets, only:[:new, :create, :edit, :update]
+
+# Add a link to password resets in app/views/sessions/new.html.haml
+```
+```bash
+$ rails generate migration add_reset_to_users \
+> reset_digest:string reset_sent_at:datetime
+$ bundle exec rake db:migrate
+$ touch app/views/password_resets/new.html.haml
+```
+*app/views/password_resets/new.html.haml*
+```haml
+- provide(:title, "Forgot password")
+%h1 Forgot Password
+.row
+  .col-md-6.col-md-offset-3
+    = form_for(:password_reset, url: login_path) do |f|
+      = f.label :email
+      = f.email_field :email, class: 'form-control'
+      = f.submit "Submit", class: "btn btn-primary"
+```
+*app/controllers/password_resets_controller.rb*
+```ruby  
+  def create
+    @user = User.find_by(email: params[:password_reset][:email].downcase)
+    if @user
+      @user.create_password_digest
+      @user.send_password_reset_email
+      flash[:info] = "Email sent with password reset instructions"
+      redirect_to root_url
+    else
+      flash[:danger] = "Email address not found"
+      render 'new'
+  end
+```
+*app/models/user.rb
+```ruby
+  attr_accessor :remember_token, :activation_token, :reset_token
+  ...
+  # Sets the password reset attributes
+  def create_reset_digest
+    self.reset_token = User.new_token
+    update_attribute(:reset_digest, User.digest(reset_token))
+    update_attribute(:reset_sent_at, Time.zone.now)
+  end
+
+  # Sends password reset email
+  def send_password_reset_email
+    UserMailer.password_reset(self).deliver_now
+  end
+```
+*app/mailers/user_mailer.rb*
+```ruby
+  def password_reset(user)
+    @user = user
+    mail to: user.email, subject: "Password reset"
+  end
+```
+*app/views/user_mailer/password_reset.text.haml*
+
+*app/views/user_mailer/password_reset.html.haml*
+
+*test/mailers/previews/user_mailer_preview.rb*
+```ruby
+  # Preview this email at http://localhost:3000/rails/mailers/user_mailer/password_reset
+  def password_reset
+    user = User.first
+    user.reset_token = User.new_token
+    UserMailer.password_reset(user)
+  end
+
+```
+* create form in *app/views/password_resets/edit.html.haml*
+*app/controllers/password_resets_controller.rb*
+```ruby
+
+  before_action :get_user, only: [:edit, :update]
+  before_action :valid_user, only: [:edit, :update]
+  before_action :check_expiration, only: [:edit, :update]
+  ...
+  def create
+    @user = User.find_by(email: params[:password_reset][:email].downcase)
+    if @user
+      @user.create_reset_digest
+      @user.send_password_reset_email
+      flash[:info] = "Email sent with password reset instructions"
+      redirect_to root_url
+    else
+      flash[:danger] = "Email address not found"
+      render 'new'
+    end
+  end
+
+  def update
+    if password_blank?
+      flash.now[]:danger = "Password can't be blank"
+      render 'edit'
+    elsif @user.update_attributes(user_params)
+      log_in @user
+      flash[:success] = "Password has been reset."
+      redirect_to @user
+    else
+      render 'edit'
+    end
+  end
+
+  private
+
+    def user_params
+      params.require(:user).permit(:password, :password_confirmation)
+    end
+
+    def password_blank
+      params[:user][:password].blank?
+    end
+
+    def get_user
+      @user =   User.find_by(email: params[:email])
+    end
+
+    def valid_user
+      unless (@user && @user.activated && @user.authenticated?(:reset, params[:id]))
+        redirect_to root_url
+      end
+    end
+
+    def check_expiration
+      if @user.password_reset_expired?
+        flash[:danger] = "Password reset has expired."
+        redirect_to new_password_reset_url
+      end
+    end
+```
+
+#### Password Reset:
+
