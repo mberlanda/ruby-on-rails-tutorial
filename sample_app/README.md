@@ -1389,5 +1389,7 @@ $ touch app/views/password_resets/new.html.haml
         redirect_to new_password_reset_url
       end
     end
-
 ```
+
+#### Password Reset:
+
