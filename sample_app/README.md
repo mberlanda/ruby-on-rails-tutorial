@@ -1239,3 +1239,155 @@ app/test/models/user_test.rb
 # refactor app/controllers/users_controller.rb
 # refactor app/controllers/account_activations_controller.rb
 ```
+
+#### Password Reset:
+
+```bash
+$ rails generate controller PasswordResets --no-test-framework
+      create  app/controllers/password_resets_controller.rb
+      invoke  haml
+      create    app/views/password_resets
+      invoke  helper
+      create    app/helpers/password_resets_helper.rb
+      invoke  assets
+      invoke    coffee
+      create      app/assets/javascripts/password_resets.coffee
+      invoke    scss
+      create      app/assets/stylesheets/password_resets.scss
+```
+*config/routes.rb
+```ruby
+resources :password_resets, only:[:new, :create, :edit, :update]
+
+# Add a link to password resets in app/views/sessions/new.html.haml
+```
+```bash
+$ rails generate migration add_reset_to_users \
+> reset_digest:string reset_sent_at:datetime
+$ bundle exec rake db:migrate
+$ touch app/views/password_resets/new.html.haml
+```
+*app/views/password_resets/new.html.haml*
+```haml
+- provide(:title, "Forgot password")
+%h1 Forgot Password
+.row
+  .col-md-6.col-md-offset-3
+    = form_for(:password_reset, url: login_path) do |f|
+      = f.label :email
+      = f.email_field :email, class: 'form-control'
+      = f.submit "Submit", class: "btn btn-primary"
+```
+*app/controllers/password_resets_controller.rb*
+```ruby  
+  def create
+    @user = User.find_by(email: params[:password_reset][:email].downcase)
+    if @user
+      @user.create_password_digest
+      @user.send_password_reset_email
+      flash[:info] = "Email sent with password reset instructions"
+      redirect_to root_url
+    else
+      flash[:danger] = "Email address not found"
+      render 'new'
+  end
+```
+*app/models/user.rb
+```ruby
+  attr_accessor :remember_token, :activation_token, :reset_token
+  ...
+  # Sets the password reset attributes
+  def create_reset_digest
+    self.reset_token = User.new_token
+    update_attribute(:reset_digest, User.digest(reset_token))
+    update_attribute(:reset_sent_at, Time.zone.now)
+  end
+
+  # Sends password reset email
+  def send_password_reset_email
+    UserMailer.password_reset(self).deliver_now
+  end
+```
+*app/mailers/user_mailer.rb*
+```ruby
+  def password_reset(user)
+    @user = user
+    mail to: user.email, subject: "Password reset"
+  end
+```
+*app/views/user_mailer/password_reset.text.haml*
+
+*app/views/user_mailer/password_reset.html.haml*
+
+*test/mailers/previews/user_mailer_preview.rb*
+```ruby
+  # Preview this email at http://localhost:3000/rails/mailers/user_mailer/password_reset
+  def password_reset
+    user = User.first
+    user.reset_token = User.new_token
+    UserMailer.password_reset(user)
+  end
+
+```
+* create form in *app/views/password_resets/edit.html.haml*
+*app/controllers/password_resets_controller.rb*
+```ruby
+
+  before_action :get_user, only: [:edit, :update]
+  before_action :valid_user, only: [:edit, :update]
+  before_action :check_expiration, only: [:edit, :update]
+  ...
+  def create
+    @user = User.find_by(email: params[:password_reset][:email].downcase)
+    if @user
+      @user.create_reset_digest
+      @user.send_password_reset_email
+      flash[:info] = "Email sent with password reset instructions"
+      redirect_to root_url
+    else
+      flash[:danger] = "Email address not found"
+      render 'new'
+    end
+  end
+
+  def update
+    if password_blank?
+      flash.now[]:danger = "Password can't be blank"
+      render 'edit'
+    elsif @user.update_attributes(user_params)
+      log_in @user
+      flash[:success] = "Password has been reset."
+      redirect_to @user
+    else
+      render 'edit'
+    end
+  end
+
+  private
+
+    def user_params
+      params.require(:user).permit(:password, :password_confirmation)
+    end
+
+    def password_blank
+      params[:user][:password].blank?
+    end
+
+    def get_user
+      @user =   User.find_by(email: params[:email])
+    end
+
+    def valid_user
+      unless (@user && @user.activated && @user.authenticated?(:reset, params[:id]))
+        redirect_to root_url
+      end
+    end
+
+    def check_expiration
+      if @user.password_reset_expired?
+        flash[:danger] = "Password reset has expired."
+        redirect_to new_password_reset_url
+      end
+    end
+
+```
